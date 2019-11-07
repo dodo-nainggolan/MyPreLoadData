@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteStatement;
 
 import java.util.ArrayList;
 
@@ -90,5 +91,22 @@ public class MahasiswaHelper {
         }
         cursor.close();
         return arrayList;
+    }
+    public void beginTransaction() {
+        database.beginTransaction();
+    }
+    public void setTransactionSuccess() {
+        database.setTransactionSuccessful();
+    }
+    public void endTransaction() {
+        database.endTransaction();
+    }
+    public void insertTransaction(MahasiswaModel mahasiswaModel) {
+        String sql = "INSERT INTO " + TABLE_NAME + " (" + NAMA + ", " + NIM + ") VALUES (?, ?)";
+        SQLiteStatement stmt = database.compileStatement(sql);
+        stmt.bindString(1, mahasiswaModel.getName());
+        stmt.bindString(2, mahasiswaModel.getNim());
+        stmt.execute();
+        stmt.clearBindings();
     }
 }

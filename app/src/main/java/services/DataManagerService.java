@@ -72,15 +72,18 @@ public class DataManagerService extends Service {
         super.onRebind(intent);
         Log.d(TAG, "onRebind: ");
     }
+
     private final LoadDataCallback myCallback = new LoadDataCallback() {
         @Override
         public void onPreLoad() {
             sendMessage(PREPARATION_MESSAGE);
         }
+
         @Override
         public void onLoadCancel() {
             sendMessage(CANCEL_MESSAGE);
         }
+
         @Override
         public void onProgressUpdate(long progress) {
             try {
@@ -93,15 +96,18 @@ public class DataManagerService extends Service {
                 e.printStackTrace();
             }
         }
+
         @Override
         public void onLoadSuccess() {
             sendMessage(SUCCESS_MESSAGE);
         }
+
         @Override
         public void onLoadFailed() {
             sendMessage(FAILED_MESSAGE);
         }
     };
+
     public void sendMessage(int messageStatus) {
         Message message = Message.obtain(null, messageStatus);
         try {
@@ -143,17 +149,21 @@ public class DataManagerService extends Service {
 
                 //Gunakan ini untuk insert query dengan menggunakan standar query
                 try {
+                    mahasiswaHelper.beginTransaction();
                     for (MahasiswaModel model : mahasiswaModels) {
-                        mahasiswaHelper.insert(model);
+                        mahasiswaHelper.insertTransaction(model);
                         progress += progressDiff;
                         publishProgress((int) progress);
                     }
+                    mahasiswaHelper.setTransactionSuccess();
                     isInsertSuccess = true;
                     appPreference.setFirstRun(false);
                 } catch (Exception e) {
                     // Jika gagal maka do nothing
                     Log.e(TAG, "doInBackground: Exception");
                     isInsertSuccess = false;
+                } finally {
+                    mahasiswaHelper.endTransaction();
                 }
                 //akhir dari standar query
                 mahasiswaHelper.close();
