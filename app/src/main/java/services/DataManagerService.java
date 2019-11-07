@@ -39,16 +39,14 @@ interface LoadDataCallback {
 
 public class DataManagerService extends Service {
 
-    private String TAG = DataManagerService.class.getSimpleName ();
-    private Messenger mActivityMessenger;
-
     public static final int PREPARATION_MESSAGE = 0;
     public static final int UPDATE_MESSAGE = 1;
     public static final int SUCCESS_MESSAGE = 2;
     public static final int FAILED_MESSAGE = 3;
     public static final int CANCEL_MESSAGE = 4;
     public static final String ACTIVITY_HANDLER = "activity_handler";
-
+    private String TAG = DataManagerService.class.getSimpleName ();
+    private Messenger mActivityMessenger;
     private final LoadDataCallback myCallback = new LoadDataCallback () {
         @Override
         public void onPreLoad() {
@@ -164,16 +162,27 @@ public class DataManagerService extends Service {
                 //Gunakan ini untuk insert query dengan menggunakan standar query
                 try {
                     mahasiswaHelper.beginTransaction ();
+
                     for (MahasiswaModel model : mahasiswaModels) {
-                        mahasiswaHelper.insertTransaction ( model );
-                        progress += progressDiff;
-                        publishProgress ( (int) progress );
+                        if (isCancelled ()) {
+                            break;
+                        } else {
+                            mahasiswaHelper.insertTransaction ( model );
+                            progress += progressDiff;
+                            publishProgress ( (int) progress );
+                        }
                     }
-                    mahasiswaHelper.setTransactionSuccess ();
-                    isInsertSuccess = true;
-                    appPreference.setFirstRun ( false );
+
+                    if (isCancelled ()) {
+                        isInsertSuccess = false;
+                        appPreference.setFirstRun ( true );
+                        weakCallback.get ().onLoadCancel ();
+                    } else {
+                        mahasiswaHelper.setTransactionSuccess ();
+                        isInsertSuccess = true;
+                        appPreference.setFirstRun ( false );
+                    }
                 } catch (Exception e) {
-                    // Jika gagal maka do nothing
                     Log.e ( TAG, "doInBackground: Exception" );
                     isInsertSuccess = false;
                 } finally {
