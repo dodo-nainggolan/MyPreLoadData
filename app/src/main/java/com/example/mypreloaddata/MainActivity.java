@@ -17,10 +17,6 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-
-import database.MahasiswaHelper;
-import model.MahasiswaModel;
 import services.DataManagerService;
 
 import static services.DataManagerService.CANCEL_MESSAGE;
@@ -35,10 +31,22 @@ public class MainActivity extends AppCompatActivity implements HandlerCallback {
     boolean mServiceBound;
     private ProgressBar progressBar;
 
+    private final ServiceConnection mServiceConnection = new ServiceConnection () {
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mServiceBound = false;
+        }
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mBoundService = new Messenger ( service );
+            mServiceBound = true;
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
         progressBar = findViewById(R.id.progress_bar);
 
@@ -47,23 +55,25 @@ public class MainActivity extends AppCompatActivity implements HandlerCallback {
         mBoundServiceIntent.putExtra(DataManagerService.ACTIVITY_HANDLER, mActivityMessenger);
 
         bindService(mBoundServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+
     }
 
-    private final ServiceConnection mServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mServiceBound = false;
-        }
 
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            mBoundService = new Messenger(service);
-            mServiceBound = true;
-        }
-    };
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        unbindService(mServiceConnection);
+    }
+
+    @Override
+    public void onPreparation() {
+        Toast.makeText(this, "MEMULAI MEMUAT DATA", Toast.LENGTH_LONG).show();
+    }
 
     @Override
     public void updateProgress(long progress) {
+
         Log.e("PROGRESS", "updateProgress: " + progress);
         progressBar.setProgress((int) progress);
     }
@@ -79,18 +89,14 @@ public class MainActivity extends AppCompatActivity implements HandlerCallback {
     public void loadFailed() {
         Toast.makeText(this, "GAGAL", Toast.LENGTH_LONG).show();
     }
-    
+
     @Override
     public void loadCancel() {
         finish();
     }
 
-    @Override
-    public void preparation() {
-        Toast.makeText(this, "MEMULAI MEMUAT DATA", Toast.LENGTH_LONG).show();
-    }
     private static class IncomingHandler extends Handler {
-        WeakReference<HandlerCallback> weakCallback;
+        final WeakReference<HandlerCallback> weakCallback;
         IncomingHandler(HandlerCallback callback) {
             weakCallback = new WeakReference<>(callback);
         }
@@ -98,7 +104,7 @@ public class MainActivity extends AppCompatActivity implements HandlerCallback {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case PREPARATION_MESSAGE:
-                    weakCallback.get().preparation();
+                    weakCallback.get().onPreparation();
                     break;
                 case UPDATE_MESSAGE:
                     Bundle bundle = msg.getData();
@@ -120,7 +126,7 @@ public class MainActivity extends AppCompatActivity implements HandlerCallback {
 }
 
 interface HandlerCallback {
-    void preparation();
+    void onPreparation();
 
     void updateProgress(long progress);
 

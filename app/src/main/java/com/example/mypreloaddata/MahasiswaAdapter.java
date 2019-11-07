@@ -41,8 +41,18 @@ public class MahasiswaAdapter extends RecyclerView.Adapter<MahasiswaAdapter.Maha
     }
 
     @Override
+    public int getItemViewType(int position) {
+        return position;
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    @Override
     public int getItemCount() {
-        return 0;
+        return listMahasiswa.size();
     }
 
     public class MahasiswaHolder extends RecyclerView.ViewHolder {
